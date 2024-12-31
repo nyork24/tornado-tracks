@@ -1,7 +1,7 @@
 import ee
 
 service_account = "local-host@ee-tornado-tracks.iam.gserviceaccount.com"
-credentials = ee.ServiceAccountCredentials(service_account, "C:\Users\Lenovo\earth-engine-api-key.json")
+credentials = ee.ServiceAccountCredentials(service_account, r"C:\Users\Lenovo\Github-Projects\earth-engine-api-key.json")
 ee.Initialize(credentials)
 
 def get_center(lat1, lon1, lat2, lon2):
