@@ -8,6 +8,9 @@ credentials = ee.ServiceAccountCredentials(service_account, r"C:\Users\Lenovo\Gi
 ee.Initialize(credentials)
 
 def get_center(lat1, lon1, lat2, lon2):
+    """
+    Returns the centerpoint (lat, lon) of a line drawn between two given coordinate pairs
+    """
     center_lat = (lat1 + lat2) / 2
     center_lon = (lon1 + lon2) / 2
     return (center_lat, center_lon)
@@ -48,12 +51,20 @@ def bbox_from_point(bbox_size, lat_point, lon_point):
     return ee.Geometry.BBox(lon_min, lat_min, lon_max, lat_max)
 
 def get_ew_km(lat1, lon1, lon2):
+    """
+    Given the longitude of two points(a, b), and the latitude of a point(a), returns the 
+    EAST --> WEST km distance from point(a) to point(b)
+    """
     point_a = (lat1, lon1)
     point_b = (lat1, lon2)
     dist = distance.geodesic(point_a, point_b).kilometers
     return dist
 
 def get_ns_km(lat1, lon1, lat2):
+    """
+    Given the latitude of two points(a, b), and the longitude of a point(a), returns the 
+    NORTH --> SOUTH km distance from point(a) to point(b)
+    """
     point_a = (lat1, lon1)
     point_b = (lat2, lon1)
     dist = distance.geodesic(point_a, point_b).kilometers
@@ -76,9 +87,6 @@ def image_dimensions(lat_length, lon_length):
         x_dim = int(y_dim * ratio)
         return y_dim, x_dim
 
-# coordinates = 
-# point = ee.Geometry.Point()
-
 def main():
     center = get_center(35.284,-97.628,35.341,-97.3999)
     print(center)
@@ -89,21 +97,22 @@ def main():
 
     ee.ImageCollection("COPERNICUS/S2_SR_HARMONIZED")
 
-    moore_collection = (
+    # compact way of storing an ee image collection ?
+    moore_before_collection = (
     ee.ImageCollection("COPERNICUS/S2_SR_HARMONIZED")
     .filterBounds(bbox)
     .filterDate("2020-01-01", "2021-01-01")
     .filter(ee.Filter.lte("CLOUDY_PIXEL_PERCENTAGE", 5))
     )
 
-    moore_image = ee.Image(moore_collection.first())
+    moore_before_image = ee.Image(moore_before_collection.first())
 
     x_dim, y_dim = image_dimensions(ns, ew)
     print(str(x_dim))
     print(str(y_dim))
 
-    # getThumbURL
-    moore_url = moore_image.getThumbURL(
+    # getThumbURL ?
+    moore_before_url = moore_before_image.getThumbURL(
     {
         "format": "png",
         "bands": ["B4", "B3", "B2"],
@@ -114,7 +123,31 @@ def main():
     }
     )   
 
-    print(moore_url)
+    moore_after_collection = (
+    ee.ImageCollection("COPERNICUS/S2_SR_HARMONIZED")
+    .filterBounds(bbox)
+    .filterDate("2013-05-21", "2021-08-21")
+    .filter(ee.Filter.lte("CLOUDY_PIXEL_PERCENTAGE", 5))
+    )
+
+    moore_after_image = ee.Image(moore_after_collection.first())
+# get info of photos
+
+    moore_after_url = moore_after_image.getThumbURL(
+    {
+        "format": "png",
+        "bands": ["B4", "B3", "B2"],
+        "dimensions": [x_dim, y_dim],
+        "region": bbox,
+        "min": 0,
+        "max": 4000,
+    }
+    ) 
+
+    print(moore_before_url)
+    print(moore_after_url)
+
+
 
 
 main()
