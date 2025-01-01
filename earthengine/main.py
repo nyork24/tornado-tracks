@@ -95,14 +95,12 @@ def main():
     size = (ns, ew)
     bbox = bbox_from_point(size, center[0], center[1])
 
-    ee.ImageCollection("COPERNICUS/S2_SR_HARMONIZED")
-
     # compact way of storing an ee image collection ?
     moore_before_collection = (
-    ee.ImageCollection("COPERNICUS/S2_SR_HARMONIZED")
+    ee.ImageCollection("MODIS/061/MOD09A1")
     .filterBounds(bbox)
-    .filterDate("2020-01-01", "2021-01-01")
-    .filter(ee.Filter.lte("CLOUDY_PIXEL_PERCENTAGE", 5))
+    .filterDate("1980-05-20", "2013-05-20")
+    .filter(ee.Filter.lte("CLOUDY_PIXEL_PERCENTAGE", 10))
     )
 
     moore_before_image = ee.Image(moore_before_collection.first())
@@ -126,12 +124,12 @@ def main():
     moore_after_collection = (
     ee.ImageCollection("COPERNICUS/S2_SR_HARMONIZED")
     .filterBounds(bbox)
-    .filterDate("2013-05-21", "2021-08-21")
-    .filter(ee.Filter.lte("CLOUDY_PIXEL_PERCENTAGE", 5))
+    .filterDate("2020-01-01", "2021-01-01")
+    .filter(ee.Filter.lte("CLOUDY_PIXEL_PERCENTAGE", 10))
     )
 
     moore_after_image = ee.Image(moore_after_collection.first())
-# get info of photos
+    # get info of photos
 
     moore_after_url = moore_after_image.getThumbURL(
     {
