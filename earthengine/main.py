@@ -39,10 +39,10 @@ def bbox_from_point(bbox_size, lat_point, lon_point):
         distance.geodesic(kilometers=lat_km / 2).destination(origin, bearing=0)
     )[0]
     lon_min = (
-        distance.geodesic(kilometers=lat_km / 2).destination(origin, bearing=270)
+        distance.geodesic(kilometers=lon_km / 2).destination(origin, bearing=270)
     )[1]
     lon_max = (
-        distance.geodesic(kilometers=lat_km / 2).destination(origin, bearing=90)
+        distance.geodesic(kilometers=lon_km / 2).destination(origin, bearing=90)
     )[1]
 
     return ee.Geometry.BBox(lon_min, lat_min, lon_max, lat_max)
@@ -81,11 +81,13 @@ def main():
 
     moore_image = ee.Image(moore_collection.first())
 
+    # need dim_x and dim_y algorithm
+
     moore_url = moore_image.getThumbURL(
     {
         "format": "png",
         "bands": ["B4", "B3", "B2"],
-        "dimensions": [1080, 1080],
+        "dimensions": [1080, 378],
         "region": bbox,
         "min": 0,
         "max": 4000,
