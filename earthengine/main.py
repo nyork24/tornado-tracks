@@ -59,6 +59,22 @@ def get_ns_km(lat1, lon1, lat2):
     dist = distance.geodesic(point_a, point_b).kilometers
     return dist
 
+def image_dimensions(length, width):
+    """
+    Given a length and width in km, returns proper dimensions of a 10M or better image for use in ee.Image retrieval 
+    * might cause problems if tornado is too long, and should be tweaked in the future to be more browser friendly
+    """
+    if length >= width:
+        # max_dim = length
+        x_dim = int(length * 100)
+        ratio = width / length
+        y_dim = int(x_dim * ratio)
+    else:
+        y_dim = int(width * 100)
+        ratio = length / width
+        x_dim = int(y_dim * ratio)
+    return x_dim, y_dim
+
 # coordinates = 
 # point = ee.Geometry.Point()
 
