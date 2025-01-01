@@ -59,21 +59,22 @@ def get_ns_km(lat1, lon1, lat2):
     dist = distance.geodesic(point_a, point_b).kilometers
     return dist
 
-def image_dimensions(length, width):
+def image_dimensions(lat_length, lon_length):
     """
-    Given a length and width in km, returns proper dimensions of a 10M or better image for use in ee.Image retrieval 
+    Given a height (lat) and width (lon) in km, returns proper dimensions of a 10M or better image for use in ee.Image retrieval 
     * might cause problems if tornado is too long, and should be tweaked in the future to be more browser friendly
     """
-    if length >= width:
+    if lat_length >= lon_length:
         # max_dim = length
-        x_dim = int(length * 100)
-        ratio = width / length
+        x_dim = int(lat_length * 100)
+        ratio = lon_length / lat_length
         y_dim = int(x_dim * ratio)
+        return x_dim, y_dim
     else:
-        y_dim = int(width * 100)
-        ratio = length / width
+        y_dim = int(lon_length * 100)
+        ratio = lat_length / lon_length
         x_dim = int(y_dim * ratio)
-    return x_dim, y_dim
+        return y_dim, x_dim
 
 # coordinates = 
 # point = ee.Geometry.Point()
@@ -97,13 +98,16 @@ def main():
 
     moore_image = ee.Image(moore_collection.first())
 
-    # need dim_x and dim_y algorithm
+    x_dim, y_dim = image_dimensions(ns, ew)
+    print(str(x_dim))
+    print(str(y_dim))
 
+    # getThumbURL
     moore_url = moore_image.getThumbURL(
     {
         "format": "png",
         "bands": ["B4", "B3", "B2"],
-        "dimensions": [1080, 378],
+        "dimensions": [x_dim, y_dim],
         "region": bbox,
         "min": 0,
         "max": 4000,
