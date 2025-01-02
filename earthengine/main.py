@@ -2,9 +2,11 @@ import ee
 import numpy as np
 import geopy
 from geopy import distance
+from io import StringIO
+
 
 service_account = "local-host@ee-tornado-tracks.iam.gserviceaccount.com"
-credentials = ee.ServiceAccountCredentials(service_account, r"C:\Users\Lenovo\Github-Projects\earth-engine-api-key.json")
+credentials = ee.ServiceAccountCredentials(service_account, r"/Users/nolan/Downloads/download temp/ee-tornado-tracks-94b11e113970.json")
 ee.Initialize(credentials)
 
 def get_center(lat1, lon1, lat2, lon2):
@@ -97,9 +99,9 @@ def main():
 
     # compact way of storing an ee image collection ?
     moore_before_collection = (
-    ee.ImageCollection("MODIS/061/MOD09A1")
+    ee.ImageCollection("COPERNICUS/S2_SR_HARMONIZED")
     .filterBounds(bbox)
-    .filterDate("1980-05-20", "2013-05-20")
+    .filterDate("1980-05-20", "2021-05-20")
     .filter(ee.Filter.lte("CLOUDY_PIXEL_PERCENTAGE", 10))
     )
 
@@ -149,4 +151,3 @@ def main():
 
 
 main()
-    
