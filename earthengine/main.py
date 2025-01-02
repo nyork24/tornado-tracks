@@ -89,30 +89,33 @@ def image_dimensions(lat_length, lon_length):
         x_dim = int(y_dim * ratio)
         return y_dim, x_dim
 
-    # 44.9743,-84.8794,45.0555,-84.5408
+    # 33.5995,-95.7490,33.8880,-95.4637
 def main():
-    center = get_center(44.9743,-84.8794,45.0555,-84.5408)
+    center = get_center(33.5995,-95.7490,33.8880,-95.4637)
     print(center)
-    ns = get_ns_km(44.9743, -84.8794, 45.0555)
-    ew = get_ew_km(44.9743, -84.8794, -84.5408)
+    ns = get_ns_km(33.5995, -95.7490, 33.8880)
+    ew = get_ew_km(33.5995, -95.7490, -95.4637)
     size = (ns, ew)
     bbox = bbox_from_point(size, center[0], center[1])
+
+    x_dim, y_dim = image_dimensions(ns, ew)
+    print(str(x_dim))
+    print(str(y_dim))
+
+    #downscale image
+    x_dim = int(x_dim / 2)
+    y_dim = int(y_dim / 2)
 
     # compact way of storing an ee image collection ?
     # fix image sizes being too large
     before_collection = (
     ee.ImageCollection("COPERNICUS/S2_HARMONIZED")
     .filterBounds(bbox)
-    .filterDate("2022-02-19", "2022-05-19")
+    .filterDate("2023-10-10", "2023-11-03")
     .filter(ee.Filter.lte("CLOUDY_PIXEL_PERCENTAGE", 5))
     )
-    
 
     before_image = ee.Image(before_collection.first())
-
-    x_dim, y_dim = image_dimensions(ns, ew)
-    print(str(x_dim))
-    print(str(y_dim))
 
     # getThumbURL ?
     before_url = before_image.getThumbURL(
@@ -122,14 +125,14 @@ def main():
         "dimensions": [x_dim, y_dim],
         "region": bbox,
         "min": 0,
-        "max": 4000,
+        "max": 3000,
     }
     )   
 
     after_collection = (
     ee.ImageCollection("COPERNICUS/S2_HARMONIZED")
     .filterBounds(bbox)
-    .filterDate("2022-05-21", "2022-06-21")
+    .filterDate("2022-11-04", "2023-12-04")
     .filter(ee.Filter.lte("CLOUDY_PIXEL_PERCENTAGE", 5))
     )
 
@@ -143,7 +146,7 @@ def main():
         "dimensions": [x_dim, y_dim],
         "region": bbox,
         "min": 0,
-        "max": 4000,
+        "max": 3000,
     }
     ) 
 
