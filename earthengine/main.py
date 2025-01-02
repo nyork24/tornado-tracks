@@ -111,7 +111,7 @@ def main():
     before_collection = (
     ee.ImageCollection("COPERNICUS/S2_HARMONIZED")
     .filterBounds(bbox)
-    .filterDate("2023-10-10", "2023-11-03")
+    .filterDate("2022-10-18", "2022-10-19")
     .filter(ee.Filter.lte("CLOUDY_PIXEL_PERCENTAGE", 5))
     )
 
