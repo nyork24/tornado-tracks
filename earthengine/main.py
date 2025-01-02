@@ -89,30 +89,33 @@ def image_dimensions(lat_length, lon_length):
         x_dim = int(y_dim * ratio)
         return y_dim, x_dim
 
+    # 44.9743,-84.8794,45.0555,-84.5408
 def main():
-    center = get_center(35.284,-97.628,35.341,-97.3999)
+    center = get_center(44.9743,-84.8794,45.0555,-84.5408)
     print(center)
-    ns = get_ns_km(35.284, -97.628, 35.341)
-    ew = get_ew_km(35.284, -97.628, -97.3999)
+    ns = get_ns_km(44.9743, -84.8794, 45.0555)
+    ew = get_ew_km(44.9743, -84.8794, -84.5408)
     size = (ns, ew)
     bbox = bbox_from_point(size, center[0], center[1])
 
     # compact way of storing an ee image collection ?
-    moore_before_collection = (
+    # fix image sizes being too large
+    before_collection = (
     ee.ImageCollection("COPERNICUS/S2_HARMONIZED")
     .filterBounds(bbox)
-    .filterDate("1980-05-20", "2021-05-20")
-    .filter(ee.Filter.lte("CLOUDY_PIXEL_PERCENTAGE", 10))
+    .filterDate("2022-02-19", "2022-05-19")
+    .filter(ee.Filter.lte("CLOUDY_PIXEL_PERCENTAGE", 5))
     )
+    
 
-    moore_before_image = ee.Image(moore_before_collection.first())
+    before_image = ee.Image(before_collection.first())
 
     x_dim, y_dim = image_dimensions(ns, ew)
     print(str(x_dim))
     print(str(y_dim))
 
     # getThumbURL ?
-    moore_before_url = moore_before_image.getThumbURL(
+    before_url = before_image.getThumbURL(
     {
         "format": "png",
         "bands": ["B4", "B3", "B2"],
@@ -123,17 +126,17 @@ def main():
     }
     )   
 
-    moore_after_collection = (
+    after_collection = (
     ee.ImageCollection("COPERNICUS/S2_HARMONIZED")
     .filterBounds(bbox)
-    .filterDate("2020-01-01", "2021-01-01")
-    .filter(ee.Filter.lte("CLOUDY_PIXEL_PERCENTAGE", 10))
+    .filterDate("2022-05-21", "2022-06-21")
+    .filter(ee.Filter.lte("CLOUDY_PIXEL_PERCENTAGE", 5))
     )
 
-    moore_after_image = ee.Image(moore_after_collection.first())
+    after_image = ee.Image(after_collection.first())
     # get info of photos
 
-    moore_after_url = moore_after_image.getThumbURL(
+    after_url = after_image.getThumbURL(
     {
         "format": "png",
         "bands": ["B4", "B3", "B2"],
@@ -144,8 +147,8 @@ def main():
     }
     ) 
 
-    print(moore_before_url)
-    print(moore_after_url)
+    print(before_url)
+    print(after_url)
 
 
 
