@@ -108,6 +108,7 @@ def main():
 
     # compact way of storing an ee image collection ?
     # fix image sizes being too large
+    # add zoom feature if path is large, to highlight specific features
     before_collection = (
     ee.ImageCollection("COPERNICUS/S2_HARMONIZED")
     .filterBounds(bbox)
@@ -132,11 +133,11 @@ def main():
     after_collection = (
     ee.ImageCollection("COPERNICUS/S2_HARMONIZED")
     .filterBounds(bbox)
-    .filterDate("2022-11-04", "2023-12-04")
+    .filterDate("2022-11-04", "2023-11-07")
     .filter(ee.Filter.lte("CLOUDY_PIXEL_PERCENTAGE", 5))
     )
 
-    after_image = ee.Image(after_collection.first())
+    after_image = after_collection.mosaic()
     # get info of photos
 
     after_url = after_image.getThumbURL(
