@@ -123,11 +123,11 @@ def get_before_image(yr, mo, dy, lat1, lon1, lat2, lon2):
     center = get_center(lat1, lon1, lat2, lon2)
     ns = get_ns_km(lat1, lon1, lat2)
     ew = get_ew_km(lat1, lon1, lon2)
+    size = (ns, ew)
     x_dim, y_dim = image_dimensions(ns, ew)
     bbox = bbox_from_point(size, center[0], center[1])
     before_date = calculate_before_date(yr, mo, dy)
     given_date = np.datetime64(f"{yr:04d}-{mo:02d}-{dy:02d}")
-    size = (ns, ew)
 
     collection = (
     ee.ImageCollection("COPERNICUS/S2_HARMONIZED")
@@ -154,16 +154,16 @@ def get_after_image(yr, mo, dy, lat1, lon1, lat2, lon2):
     center = get_center(lat1, lon1, lat2, lon2)
     ns = get_ns_km(lat1, lon1, lat2)
     ew = get_ew_km(lat1, lon1, lon2)
+    size = (ns, ew)
     x_dim, y_dim = image_dimensions(ns, ew)
     bbox = bbox_from_point(size, center[0], center[1])
-    before_date = calculate_before_date(yr, mo, dy)
+    after_date = calculate_after_date(yr, mo, dy)
     given_date = np.datetime64(f"{yr:04d}-{mo:02d}-{dy:02d}")
-    size = (ns, ew)
 
     collection = (
     ee.ImageCollection("COPERNICUS/S2_HARMONIZED")
     .filterBounds(bbox)
-    .filterDate(str(before_date), str(given_date))
+    .filterDate(str(given_date), str(after_date))
     .filter(ee.Filter.lte("CLOUDY_PIXEL_PERCENTAGE", 5))
     )
 
@@ -248,4 +248,5 @@ def main():
 
 
 
-main()
+if __name__ == "__main__":
+    main()

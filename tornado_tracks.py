@@ -12,30 +12,30 @@ def index():
     return "<p>Tornado Tracks</p>"
 
 @app.route("/satellite/before/<int:id>")
-def image():
-    tornado_data = data[data.om.isin([id])]
-    dy = tornado_data.iloc[0]['dy']
-    mo = tornado_data.iloc[0]['mo']
-    yr = tornado_data.iloc[0]['yr']
-    lat1 = tornado_data.iloc[0]['slat']
-    lon1 = tornado_data.iloc[0]['slon']
-    lat2 = tornado_data.iloc[0]['elat']
-    lon2 = tornado_data.iloc[0]['elon']
+def before_image(id):
+    tornado_data = data.loc[id]
+    dy = tornado_data[0]
+    mo = tornado_data[1]
+    yr = tornado_data[2]
+    lat1 = tornado_data[7]
+    lon1 = tornado_data[8]
+    lat2 = tornado_data[9]
+    lon2 = tornado_data[10]
 
     img_link_before = get_before_image(dy, mo, yr, lat1, lon1, lat2, lon2)
 
     return '<img src=' + img_link_before + '>'
 
 @app.route("/satellite/after/<int:id>")
-def image():
-    tornado_data = data[data.om.isin([id])]
-    dy = tornado_data.iloc[0]['dy']
-    mo = tornado_data.iloc[0]['mo']
-    yr = tornado_data.iloc[0]['yr']
-    lat1 = tornado_data.iloc[0]['slat']
-    lon1 = tornado_data.iloc[0]['slon']
-    lat2 = tornado_data.iloc[0]['elat']
-    lon2 = tornado_data.iloc[0]['elon']
+def after_image(id):
+    tornado_data = data.loc[id]
+    dy = tornado_data[0]
+    mo = tornado_data[1]
+    yr = tornado_data[2]
+    lat1 = tornado_data[7]
+    lon1 = tornado_data[8]
+    lat2 = tornado_data[9]
+    lon2 = tornado_data[10]
 
     img_link_after = get_after_image(dy, mo, yr, lat1, lon1, lat2, lon2)
 
