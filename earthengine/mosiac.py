@@ -89,7 +89,7 @@ def image_dimensions(lat_length, lon_length):
         x_dim = int(y_dim * ratio)
         return y_dim, x_dim
     
-def calculate_dates(yr, mo, dy):
+def calculate_before_date(yr, mo, dy):
     """
     Calculate the dates 30 days before and after a given date, returns in YEAR-MO-DY format
     """
@@ -98,32 +98,88 @@ def calculate_dates(yr, mo, dy):
     given_date = np.datetime64(f"{yr:04d}-{mo:02d}-{dy:02d}")
     
     # Calculate 30 days before and after
-    before_date = given_date - np.timedelta64(30, 'D')
-    after_date = given_date + np.timedelta64(30, 'D')
-    
+    before_date = given_date - np.timedelta64(30, 'D')    
     # Format the results as [YEAR-MO-DY]
     before_date_str = str(before_date)
+    
+    return before_date_str
+
+def calculate_after_date(yr, mo, dy):
+    """
+    Calculate the dates 30 days before and after a given date, returns in YEAR-MO-DY format
+    """
+    # Create a numpy datetime64 object for the given date
+    given_date = np.datetime64(f"{yr:04d}-{mo:02d}-{dy:02d}")
+
+    # Calculate 30 days before and after
+    after_date = given_date + np.timedelta64(3, 'D')    
+
+    # Format the results as [YEAR-MO-DY]
     after_date_str = str(after_date)
     
-    return before_date_str, after_date_str
+    return after_date_str
 
-def get_image(yr, mo, dy, lat1, lon1, lat2, lon2):
+def get_before_image(yr, mo, dy, lat1, lon1, lat2, lon2):
     center = get_center(lat1, lon1, lat2, lon2)
     ns = get_ns_km(lat1, lon1, lat2)
     ew = get_ew_km(lat1, lon1, lon2)
     x_dim, y_dim = image_dimensions(ns, ew)
     bbox = bbox_from_point(size, center[0], center[1])
-    before_date, after_date = calculate_dates(yr, mo, dy)
-    
+    before_date = calculate_before_date(yr, mo, dy)
+    given_date = np.datetime64(f"{yr:04d}-{mo:02d}-{dy:02d}")
     size = (ns, ew)
-
 
     collection = (
     ee.ImageCollection("COPERNICUS/S2_HARMONIZED")
     .filterBounds(bbox)
-    .filterDate("2022-10-18", "2022-10-19")
+    .filterDate(str(before_date), str(given_date))
     .filter(ee.Filter.lte("CLOUDY_PIXEL_PERCENTAGE", 5))
     )
+
+    image = collection.mosaic()
+    url = image.getThumbURL(
+    {
+        "format": "png",
+        "bands": ["B4", "B3", "B2"],
+        "dimensions": [x_dim, y_dim],
+        "region": bbox,
+        "min": 0,
+        "max": 3000,
+    }
+    )   
+
+    return url
+
+def get_after_image(yr, mo, dy, lat1, lon1, lat2, lon2):
+    center = get_center(lat1, lon1, lat2, lon2)
+    ns = get_ns_km(lat1, lon1, lat2)
+    ew = get_ew_km(lat1, lon1, lon2)
+    x_dim, y_dim = image_dimensions(ns, ew)
+    bbox = bbox_from_point(size, center[0], center[1])
+    before_date = calculate_before_date(yr, mo, dy)
+    given_date = np.datetime64(f"{yr:04d}-{mo:02d}-{dy:02d}")
+    size = (ns, ew)
+
+    collection = (
+    ee.ImageCollection("COPERNICUS/S2_HARMONIZED")
+    .filterBounds(bbox)
+    .filterDate(str(before_date), str(given_date))
+    .filter(ee.Filter.lte("CLOUDY_PIXEL_PERCENTAGE", 5))
+    )
+
+    image = collection.mosaic()
+    url = image.getThumbURL(
+    {
+        "format": "png",
+        "bands": ["B4", "B3", "B2"],
+        "dimensions": [x_dim, y_dim],
+        "region": bbox,
+        "min": 0,
+        "max": 3000,
+    }
+    )   
+
+    return url
 
 def main():
     center = get_center(33.5995,-95.7490,33.8880,-95.4637)
