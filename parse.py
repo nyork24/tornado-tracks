@@ -20,7 +20,7 @@ def main():
     print(data['len'])
     print(data.loc[620940])
     # create dataframe with only the ef3 tornados from greater dataframe
-    only_ef3 = data[data.mag.isin([3])]
+    only_ef3 = data[data.mag.isin([4])]
     print(only_ef3)
 
 

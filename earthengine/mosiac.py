@@ -112,7 +112,7 @@ def calculate_after_date(yr, mo, dy):
     given_date = np.datetime64(f"{yr:04d}-{mo:02d}-{dy:02d}")
 
     # Calculate 30 days before and after
-    after_date = given_date + np.timedelta64(3, 'D')    
+    after_date = given_date + np.timedelta64(14, 'D')    
 
     # Format the results as [YEAR-MO-DY]
     after_date_str = str(after_date)
@@ -137,17 +137,23 @@ def get_before_image(yr, mo, dy, lat1, lon1, lat2, lon2):
     )
 
     image = collection.mosaic()
-    url = image.getThumbURL(
-    {
-        "format": "png",
-        "bands": ["B4", "B3", "B2"],
-        "dimensions": [x_dim, y_dim],
-        "region": bbox,
-        "min": 0,
-        "max": 3000,
-    }
-    )   
 
+    while True:
+        try:
+            url = image.getThumbURL(
+            {
+                "format": "png",
+                "bands": ["B4", "B3", "B2"],
+                "dimensions": [x_dim, y_dim],
+                "region": bbox,
+                "min": 0,
+                "max": 3000,
+            }
+            )
+            break
+        except ee.ee_exception.EEException:
+            x_dim = x_dim / 1.5
+            y_dim = y_dim / 1.5
     return url
 
 def get_after_image(yr, mo, dy, lat1, lon1, lat2, lon2):
