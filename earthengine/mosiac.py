@@ -151,8 +151,15 @@ def is_image_blank_or_incomplete(image, region, scale=30):
     is_blank = all(value == 0 or value is None for value in pixel_sum.values())
     
     # Check if pixel count is below a threshold (indicates incompleteness)
-    is_incomplete = any(value < 100 for value in pixel_count.values())  # Adjust threshold as needed
-    
+    is_incomplete = bool()
+    dict_values = [value for value in pixel_count.values()]
+    for index in range(13): # iterate through indicies 0-12 (non mask values)
+        if dict_values[index - 1] == 0:
+            is_incomplete = True
+    for index in range(3):  # iterate through indicies 16-18 (non mask values)
+        if dict_values[index + 16] == 0:
+            is_incomplete = True
+
     return is_blank or is_incomplete
 
 def fetch_image_with_scaling(image, region, initial_scale=10, max_attempts=5):
@@ -194,24 +201,41 @@ def fetch_image_with_scaling(image, region, initial_scale=10, max_attempts=5):
     print("Exceeded maximum attempts. Unable to fetch the image.")
     return None
 
-def get_before_image(yr, mo, dy, lat1, lon1, lat2, lon2):
+def get_before_image(yr, mo, dy, lat1, lon1, lat2, lon2, max_attempts=5):
     center = get_center(lat1, lon1, lat2, lon2)
     ns = get_ns_km(lat1, lon1, lat2)
     ew = get_ew_km(lat1, lon1, lon2)
     size = (ns, ew)
     x_dim, y_dim = image_dimensions(ns, ew)
     bbox = bbox_from_point(size, center[0], center[1])
-    before_date = calculate_before_date(yr, mo, dy)
     given_date = np.datetime64(f"{yr:04d}-{mo:02d}-{dy:02d}")
+    threshold = 30
+    attempt = 0
 
-    collection = (
-    ee.ImageCollection("COPERNICUS/S2_HARMONIZED")
-    .filterBounds(bbox)
-    .filterDate(str(before_date), str(given_date))
-    .filter(ee.Filter.lte("CLOUDY_PIXEL_PERCENTAGE", 5))
-    )
+    while attempt < max_attempts:
+        try:
+            before_date = calculate_before_date(yr, mo, dy, threshold)
+            collection = (
+            ee.ImageCollection("COPERNICUS/S2_HARMONIZED")
+            .filterBounds(bbox)
+            .filterDate(str(before_date), str(given_date))
+            .filter(ee.Filter.lte("CLOUDY_PIXEL_PERCENTAGE", 5))
+            )
+            image = collection.mosaic()
+            url, scale = fetch_image_with_scaling(image, bbox)
+            print("url ", url)
+            if is_image_blank_or_incomplete(image, bbox, scale) == True:
+                raise ValueError
+            else:
+                print(f"Full image successfully generated at attempt {attempt} at threshold {threshold}.")
+                break
+        except ValueError:
+            attempt += 1
+            print(f"Request failed at attempt {attempt}, threshold {threshold}. Retrying at threshold {threshold + 7}...")
+            threshold += 7
+            before_date = calculate_before_date(yr, mo, dy, threshold)
+            print("date ", before_date)
 
-    image = collection.mosaic()
 
     # while True:
     #     try:
@@ -238,9 +262,7 @@ def get_before_image(yr, mo, dy, lat1, lon1, lat2, lon2):
     #             "min": 0,
     #             "max": 3000,
     #         }
-    #         )
-    url = fetch_image_with_scaling(image, bbox)[0]
-    
+    #         )    
     return url
 
 def get_after_image(yr, mo, dy, lat1, lon1, lat2, lon2):
@@ -265,72 +287,74 @@ def get_after_image(yr, mo, dy, lat1, lon1, lat2, lon2):
     print("URL: " + url)
     return url
 
+# def main():
+#     center = get_center(33.5995,-95.7490,33.8880,-95.4637)
+#     print(center)
+#     ns = get_ns_km(33.5995, -95.7490, 33.8880)
+#     ew = get_ew_km(33.5995, -95.7490, -95.4637)
+#     size = (ns, ew)
+#     bbox = bbox_from_point(size, center[0], center[1])
+
+#     x_dim, y_dim = image_dimensions(ns, ew)
+#     print(str(x_dim))
+#     print(str(y_dim))
+
+#     #downscale image
+#     x_dim = int(x_dim / 2)
+#     y_dim = int(y_dim / 2)
+
+#     # compact way of storing an ee image collection ?
+#     # fix image sizes being too large
+#     # add zoom feature if path is large, to highlight specific features
+#     before_collection = (
+#     ee.ImageCollection("COPERNICUS/S2_HARMONIZED")
+#     .filterBounds(bbox)
+#     .filterDate("2022-10-01", "2022-11-03")
+#     .filter(ee.Filter.lte("CLOUDY_PIXEL_PERCENTAGE", 5))
+#     )
+
+#     before_image = before_collection.mosaic()
+
+#     # getThumbURL ?
+#     before_url = before_image.getThumbURL(
+#     {
+#         "format": "png",
+#         "bands": ["B4", "B3", "B2"],
+#         "dimensions": [x_dim, y_dim],
+#         "region": bbox,
+#         "min": 0,
+#         "max": 3000,
+#     }
+#     )   
+
+#     after_collection = (
+#     ee.ImageCollection("COPERNICUS/S2_HARMONIZED")
+#     .filterBounds(bbox)
+#     .filterDate("2022-11-04", "2023-11-07")
+#     .filter(ee.Filter.lte("CLOUDY_PIXEL_PERCENTAGE", 5))
+#     )
+
+#     after_image = after_collection.mosaic()
+#     # get info of photos
+
+#     after_url = after_image.getThumbURL(
+#     {
+#         "format": "png",
+#         "bands": ["B4", "B3", "B2"],
+#         "dimensions": [x_dim, y_dim],
+#         "region": bbox,
+#         "min": 0,
+#         "max": 3000,
+#     }
+#     ) 
+
+#     print(before_url)
+#     print(after_url)
+
+
 def main():
-    center = get_center(33.5995,-95.7490,33.8880,-95.4637)
-    print(center)
-    ns = get_ns_km(33.5995, -95.7490, 33.8880)
-    ew = get_ew_km(33.5995, -95.7490, -95.4637)
-    size = (ns, ew)
-    bbox = bbox_from_point(size, center[0], center[1])
-
-    x_dim, y_dim = image_dimensions(ns, ew)
-    print(str(x_dim))
-    print(str(y_dim))
-
-    #downscale image
-    x_dim = int(x_dim / 2)
-    y_dim = int(y_dim / 2)
-
-    # compact way of storing an ee image collection ?
-    # fix image sizes being too large
-    # add zoom feature if path is large, to highlight specific features
-    before_collection = (
-    ee.ImageCollection("COPERNICUS/S2_HARMONIZED")
-    .filterBounds(bbox)
-    .filterDate("2022-10-01", "2022-11-03")
-    .filter(ee.Filter.lte("CLOUDY_PIXEL_PERCENTAGE", 5))
-    )
-
-    before_image = before_collection.mosaic()
-
-    # getThumbURL ?
-    before_url = before_image.getThumbURL(
-    {
-        "format": "png",
-        "bands": ["B4", "B3", "B2"],
-        "dimensions": [x_dim, y_dim],
-        "region": bbox,
-        "min": 0,
-        "max": 3000,
-    }
-    )   
-
-    after_collection = (
-    ee.ImageCollection("COPERNICUS/S2_HARMONIZED")
-    .filterBounds(bbox)
-    .filterDate("2022-11-04", "2023-11-07")
-    .filter(ee.Filter.lte("CLOUDY_PIXEL_PERCENTAGE", 5))
-    )
-
-    after_image = after_collection.mosaic()
-    # get info of photos
-
-    after_url = after_image.getThumbURL(
-    {
-        "format": "png",
-        "bands": ["B4", "B3", "B2"],
-        "dimensions": [x_dim, y_dim],
-        "region": bbox,
-        "min": 0,
-        "max": 3000,
-    }
-    ) 
-
-    print(before_url)
-    print(after_url)
-
-
-
+    img_link_before = get_before_image(2022, 3, 5, 41.2334, -94.2013, 41.7340, -93.0135)
+    print(img_link_before)
 
 if __name__ == "__main__":
     main()
