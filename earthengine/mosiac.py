@@ -89,7 +89,7 @@ def image_dimensions(lat_length, lon_length):
         x_dim = int(y_dim * ratio)
         return y_dim, x_dim
     
-def calculate_before_date(yr, mo, dy):
+def calculate_before_date(yr, mo, dy, threshold=30):
     """
     Calculate the dates 30 days before and after a given date, returns in YEAR-MO-DY format
     """
@@ -97,27 +97,102 @@ def calculate_before_date(yr, mo, dy):
     # Create a numpy datetime64 object for the given date
     given_date = np.datetime64(f"{yr:04d}-{mo:02d}-{dy:02d}")
     
-    # Calculate 30 days before and after
-    before_date = given_date - np.timedelta64(30, 'D')    
+    # Calculate 30 days before
+    before_date = given_date - np.timedelta64(threshold, 'D')    
     # Format the results as [YEAR-MO-DY]
     before_date_str = str(before_date)
     
     return before_date_str
 
-def calculate_after_date(yr, mo, dy):
+def calculate_after_date(yr, mo, dy, threshold=14):
     """
     Calculate the dates 30 days before and after a given date, returns in YEAR-MO-DY format
     """
     # Create a numpy datetime64 object for the given date
     given_date = np.datetime64(f"{yr:04d}-{mo:02d}-{dy:02d}")
 
-    # Calculate 30 days before and after
-    after_date = given_date + np.timedelta64(14, 'D')    
+    # Calculate 30 days after
+    after_date = given_date + np.timedelta64(threshold, 'D')    
 
     # Format the results as [YEAR-MO-DY]
     after_date_str = str(after_date)
     
     return after_date_str
+
+def is_image_blank_or_incomplete(image, region, scale=30):
+    """
+    Checks if an image is blank or incomplete by analyzing pixel values.
+
+    Args:
+        image: ee.Image to analyze.
+        region: ee.Geometry of the area to check.
+        scale: Scale in meters for the analysis.
+    
+    Returns:
+        bool: True if the image is blank or incomplete, otherwise False.
+    """
+    # Get the pixel count in the region
+    pixel_count = image.reduceRegion(
+        reducer=ee.Reducer.count(),
+        geometry=region,
+        scale=scale,
+        maxPixels=1e8
+    ).getInfo()
+    
+    # Get the sum of pixel values in all bands
+    pixel_sum = image.reduceRegion(
+        reducer=ee.Reducer.sum(),
+        geometry=region,
+        scale=scale,
+        maxPixels=1e8
+    ).getInfo()
+    
+    # Check if all bands have zero or NaN values
+    is_blank = all(value == 0 or value is None for value in pixel_sum.values())
+    
+    # Check if pixel count is below a threshold (indicates incompleteness)
+    is_incomplete = any(value < 100 for value in pixel_count.values())  # Adjust threshold as needed
+    
+    return is_blank or is_incomplete
+
+def fetch_image_with_scaling(image, region, initial_scale=10, max_attempts=5):
+    """
+    Fetch a satellite image from Google Earth Engine with dynamic scaling to handle size constraints.
+    
+    Args:
+        image: ee.Image object to be requested.
+        region: ee.Geometry representing the area of interest.
+        initial_scale: Initial resolution scale (in meters per pixel).
+        max_attempts: Maximum number of attempts to downscale the image.
+    
+    Returns:
+        ee.Image or None: The image if successful, or None if unable to fetch.
+    """
+    scale = initial_scale
+    attempts = 0
+
+    while attempts < max_attempts:
+        try:
+            # Try to fetch the image
+            url = image.getThumbURL(
+            {
+                "format": "png",
+                "bands": ["B4", "B3", "B2"],
+                "scale": scale,
+                "region": region,
+                "min": 0,
+                "max": 3000,
+            }
+            )
+            print(f"Image fetched successfully at scale {scale} meters per pixel.")
+            return (url, scale)
+        except ee.ee_exception.EEException as e:
+            print(f"Request failed at scale {scale}. Retrying with lower resolution...")
+            scale *= 2  # Double the pixel size (reduce resolution)
+            attempts += 1
+
+    print("Exceeded maximum attempts. Unable to fetch the image.")
+    return None
 
 def get_before_image(yr, mo, dy, lat1, lon1, lat2, lon2):
     center = get_center(lat1, lon1, lat2, lon2)
@@ -138,22 +213,34 @@ def get_before_image(yr, mo, dy, lat1, lon1, lat2, lon2):
 
     image = collection.mosaic()
 
-    while True:
-        try:
-            url = image.getThumbURL(
-            {
-                "format": "png",
-                "bands": ["B4", "B3", "B2"],
-                "dimensions": [x_dim, y_dim],
-                "region": bbox,
-                "min": 0,
-                "max": 3000,
-            }
-            )
-            break
-        except ee.ee_exception.EEException:
-            x_dim = x_dim / 1.5
-            y_dim = y_dim / 1.5
+    # while True:
+    #     try:
+    #         url = image.getThumbURL(
+    #         {
+    #             "format": "png",
+    #             "bands": ["B4", "B3", "B2"],
+    #             "dimensions": [x_dim, y_dim],
+    #             "region": bbox,
+    #             "min": 0,
+    #             "max": 3000,
+    #         }
+    #         )
+    #         break
+    #     except ee.ee_exception.EEException:
+    #         x_dim = x_dim / 1.5
+    #         y_dim = y_dim / 1.5
+    # url = image.getThumbURL(
+    #         {
+    #             "format": "png",
+    #             "bands": ["B4", "B3", "B2"],
+    #             "dimensions": [x_dim, y_dim],
+    #             "region": bbox,
+    #             "min": 0,
+    #             "max": 3000,
+    #         }
+    #         )
+    url = fetch_image_with_scaling(image, bbox)[0]
+    
     return url
 
 def get_after_image(yr, mo, dy, lat1, lon1, lat2, lon2):
@@ -174,17 +261,8 @@ def get_after_image(yr, mo, dy, lat1, lon1, lat2, lon2):
     )
 
     image = collection.mosaic()
-    url = image.getThumbURL(
-    {
-        "format": "png",
-        "bands": ["B4", "B3", "B2"],
-        "dimensions": [x_dim, y_dim],
-        "region": bbox,
-        "min": 0,
-        "max": 3000,
-    }
-    )   
-
+    url = fetch_image_with_scaling(image, bbox)[0]
+    print("URL: " + url)
     return url
 
 def main():
