@@ -97,9 +97,9 @@ def main():
 
     # compact way of storing an ee image collection ?
     moore_before_collection = (
-    ee.ImageCollection("MODIS/061/MOD09A1")
+    ee.ImageCollection("COPERNICUS/S2_SR_HARMONIZED")
     .filterBounds(bbox)
-    .filterDate("1980-05-20", "2013-05-20")
+    .filterDate("1980-05-20", "2021-05-20")
     .filter(ee.Filter.lte("CLOUDY_PIXEL_PERCENTAGE", 10))
     )
 
