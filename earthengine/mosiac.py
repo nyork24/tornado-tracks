@@ -6,7 +6,7 @@ from io import StringIO
 
 
 service_account = "local-host@ee-tornado-tracks.iam.gserviceaccount.com"
-credentials = ee.ServiceAccountCredentials(service_account, r"/Users/nolan/Downloads/download temp/ee-tornado-tracks-94b11e113970.json")
+credentials = ee.ServiceAccountCredentials(service_account, r"C:\Users\Lenovo\Downloads\ee-tornado-tracks-ad4d9aafd1a6.json")
 ee.Initialize(credentials)
 
 def get_center(lat1, lon1, lat2, lon2):
@@ -119,6 +119,31 @@ def calculate_after_date(yr, mo, dy, threshold=14):
     
     return after_date_str
 
+def get_image_dimensions(image):
+    """
+    Get the dimensions (height and width) of an Earth Engine image.
+    
+    Args:
+        image: ee.Image to analyze.
+    
+    Returns:
+        tuple: (height, width) in pixels.
+    """
+    # Describe the image
+    img_description = ee.Algorithms.Describe(image)
+    
+    # Get the dimensions from the description
+    bands = ee.Dictionary(img_description).get("bands")
+    dimensions = ee.List(ee.Dictionary(ee.List(bands).get(0)).get("dimensions"))
+    
+    # Extract height and width
+    print(dimensions)
+    height = dimensions.get(0).getInfo()
+    width = dimensions.get(1).getInfo()
+    
+    return height, width
+
+
 def is_image_blank_or_incomplete(image, region, x_dim, y_dim, scale=30):
     """
     Checks if an image is blank or incomplete by analyzing pixel values.
@@ -131,12 +156,14 @@ def is_image_blank_or_incomplete(image, region, x_dim, y_dim, scale=30):
     Returns:
         bool: True if the image is blank or incomplete, otherwise False.
     """
+
     # Get the pixel count in the region
     pixel_count = image.reduceRegion(
         reducer=ee.Reducer.count(),
         geometry=region,
         scale=scale,
-        maxPixels=1e8
+        bestEffort = True
+        # maxPixels=1e9
     ).getInfo()
     
     # Get the sum of pixel values in all bands
@@ -144,8 +171,11 @@ def is_image_blank_or_incomplete(image, region, x_dim, y_dim, scale=30):
         reducer=ee.Reducer.sum(),
         geometry=region,
         scale=scale,
-        maxPixels=1e8
+        bestEffort = True
+        # maxPixels=1e9
     ).getInfo()
+
+    x_dim, y_dim = get_image_dimensions(image)
     
     # Check if all bands have zero or NaN values
     is_blank = all(value == 0 or value is None for value in pixel_sum.values())
@@ -156,10 +186,10 @@ def is_image_blank_or_incomplete(image, region, x_dim, y_dim, scale=30):
         dict_values = [value for value in pixel_count.values()]
         print(dict_values)
         for index in range(13): # iterate through indicies 0-12 (non mask values)
-            if dict_values[index - 1] < (x_dim * y_dim) * 0.85 :
+            if dict_values[index - 1] < ((x_dim * y_dim) * 0.85):
                 is_incomplete = True
         for index in range(3):  # iterate through indicies 16-18 (non mask values)
-            if dict_values[index + 16] == (x_dim * y_dim) * 0.85:
+            if dict_values[index + 16] < ((x_dim * y_dim) * 0.85):
                 is_incomplete = True
     except IndexError:
         is_incomplete = True
@@ -215,6 +245,8 @@ def get_before_image(yr, mo, dy, lat1, lon1, lat2, lon2, max_attempts=5):
     given_date = np.datetime64(f"{yr:04d}-{mo:02d}-{dy:02d}")
     threshold = 30
     attempt = 0
+    scale = 10
+    url = ""
 
     while attempt < max_attempts:
         try:
@@ -226,12 +258,17 @@ def get_before_image(yr, mo, dy, lat1, lon1, lat2, lon2, max_attempts=5):
             .filter(ee.Filter.lte("CLOUDY_PIXEL_PERCENTAGE", 5))
             )
             image = collection.mosaic()
-            url, scale = fetch_image_with_scaling(image, bbox)
-            print("url ", url)
+            fetched_url, fetched_scale = fetch_image_with_scaling(image, bbox, scale)
+            print("url ", fetched_url)
+            if scale != fetched_scale:
+                scale = fetched_scale
+                x_dim = x_dim / (scale / 10)
+                y_dim = y_dim / (scale / 10)
             if is_image_blank_or_incomplete(image, bbox, x_dim, y_dim, scale) == True:
                 raise ValueError
             else:
                 print(f"Full image successfully generated at attempt {attempt} at threshold {threshold}.")
+                url = fetched_url
                 break
         except ValueError:
             attempt += 1
@@ -279,6 +316,8 @@ def get_after_image(yr, mo, dy, lat1, lon1, lat2, lon2, max_attempts=10):
     given_date = np.datetime64(f"{yr:04d}-{mo:02d}-{dy:02d}")
     threshold = 14
     attempt = 0
+    scale = 10
+    url = ""
 
     while attempt < max_attempts:
         try:
@@ -290,12 +329,17 @@ def get_after_image(yr, mo, dy, lat1, lon1, lat2, lon2, max_attempts=10):
             .filter(ee.Filter.lte("CLOUDY_PIXEL_PERCENTAGE", 5))
             )
             image = collection.mosaic()
-            url, scale = fetch_image_with_scaling(image, bbox)
-            print("url ", url)
+            fetched_url, fetched_scale = fetch_image_with_scaling(image, bbox, scale)
+            print("url ", fetched_url)
+            if scale != fetched_scale:
+                scale == fetched_scale
+                x_dim = x_dim / (scale / 10)
+                y_dim = y_dim / (scale / 10)
             if is_image_blank_or_incomplete(image, bbox, x_dim, y_dim, scale) == True:
                 raise ValueError
             else:
                 print(f"Full image successfully generated at attempt {attempt} at threshold {threshold}.")
+                url = fetched_url
                 break
         except ValueError:
             attempt += 1
@@ -309,10 +353,6 @@ def get_after_image(yr, mo, dy, lat1, lon1, lat2, lon2, max_attempts=10):
     .filterDate(str(given_date), str(after_date))
     .filter(ee.Filter.lte("CLOUDY_PIXEL_PERCENTAGE", 5))
     )
-
-    image = collection.mosaic()
-    url = fetch_image_with_scaling(image, bbox)[0]
-    print("URL: " + url)
     return url
 
 # def main():
