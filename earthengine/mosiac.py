@@ -119,7 +119,7 @@ def calculate_after_date(yr, mo, dy, threshold=14):
     
     return after_date_str
 
-def is_image_blank_or_incomplete(image, region, scale=30):
+def is_image_blank_or_incomplete(image, region, x_dim, y_dim, scale=30):
     """
     Checks if an image is blank or incomplete by analyzing pixel values.
 
@@ -152,17 +152,21 @@ def is_image_blank_or_incomplete(image, region, scale=30):
     
     # Check if pixel count is below a threshold (indicates incompleteness)
     is_incomplete = bool()
-    dict_values = [value for value in pixel_count.values()]
-    for index in range(13): # iterate through indicies 0-12 (non mask values)
-        if dict_values[index - 1] == 0:
-            is_incomplete = True
-    for index in range(3):  # iterate through indicies 16-18 (non mask values)
-        if dict_values[index + 16] == 0:
-            is_incomplete = True
+    try:
+        dict_values = [value for value in pixel_count.values()]
+        print(dict_values)
+        for index in range(13): # iterate through indicies 0-12 (non mask values)
+            if dict_values[index - 1] < (x_dim * y_dim) * 0.85 :
+                is_incomplete = True
+        for index in range(3):  # iterate through indicies 16-18 (non mask values)
+            if dict_values[index + 16] == (x_dim * y_dim) * 0.85:
+                is_incomplete = True
+    except IndexError:
+        is_incomplete = True
 
     return is_blank or is_incomplete
 
-def fetch_image_with_scaling(image, region, initial_scale=10, max_attempts=5):
+def fetch_image_with_scaling(image, region, initial_scale=10, max_attempts=10):
     """
     Fetch a satellite image from Google Earth Engine with dynamic scaling to handle size constraints.
     
@@ -224,7 +228,7 @@ def get_before_image(yr, mo, dy, lat1, lon1, lat2, lon2, max_attempts=5):
             image = collection.mosaic()
             url, scale = fetch_image_with_scaling(image, bbox)
             print("url ", url)
-            if is_image_blank_or_incomplete(image, bbox, scale) == True:
+            if is_image_blank_or_incomplete(image, bbox, x_dim, y_dim, scale) == True:
                 raise ValueError
             else:
                 print(f"Full image successfully generated at attempt {attempt} at threshold {threshold}.")
@@ -265,16 +269,40 @@ def get_before_image(yr, mo, dy, lat1, lon1, lat2, lon2, max_attempts=5):
     #         )    
     return url
 
-def get_after_image(yr, mo, dy, lat1, lon1, lat2, lon2):
+def get_after_image(yr, mo, dy, lat1, lon1, lat2, lon2, max_attempts=10):
     center = get_center(lat1, lon1, lat2, lon2)
     ns = get_ns_km(lat1, lon1, lat2)
     ew = get_ew_km(lat1, lon1, lon2)
     size = (ns, ew)
     x_dim, y_dim = image_dimensions(ns, ew)
     bbox = bbox_from_point(size, center[0], center[1])
-    after_date = calculate_after_date(yr, mo, dy)
     given_date = np.datetime64(f"{yr:04d}-{mo:02d}-{dy:02d}")
+    threshold = 14
+    attempt = 0
 
+    while attempt < max_attempts:
+        try:
+            after_date = calculate_after_date(yr, mo, dy, threshold)
+            collection = (
+            ee.ImageCollection("COPERNICUS/S2_HARMONIZED")
+            .filterBounds(bbox)
+            .filterDate(str(given_date), str(after_date))
+            .filter(ee.Filter.lte("CLOUDY_PIXEL_PERCENTAGE", 5))
+            )
+            image = collection.mosaic()
+            url, scale = fetch_image_with_scaling(image, bbox)
+            print("url ", url)
+            if is_image_blank_or_incomplete(image, bbox, x_dim, y_dim, scale) == True:
+                raise ValueError
+            else:
+                print(f"Full image successfully generated at attempt {attempt} at threshold {threshold}.")
+                break
+        except ValueError:
+            attempt += 1
+            print(f"Request failed at attempt {attempt}, threshold {threshold}. Retrying at threshold {threshold + 7}...")
+            threshold += 7
+            after_date = calculate_after_date(yr, mo, dy, threshold)
+            print("date ", after_date)
     collection = (
     ee.ImageCollection("COPERNICUS/S2_HARMONIZED")
     .filterBounds(bbox)
@@ -354,7 +382,11 @@ def get_after_image(yr, mo, dy, lat1, lon1, lat2, lon2):
 
 def main():
     img_link_before = get_before_image(2022, 3, 5, 41.2334, -94.2013, 41.7340, -93.0135)
+    img_link_after = get_after_image(2022, 3, 5, 41.2334, -94.2013, 41.7340, -93.0135)
+
     print(img_link_before)
+    print(img_link_after)
+
 
 if __name__ == "__main__":
     main()
