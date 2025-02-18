@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 
 # Load CSV
-data = pd.read_csv('2022_torn.csv', index_col='om', usecols=['om', 'date', 'time', 'st', 'mag', 'loss', 'slat', 'slon', 'elat', 'elon', 'len', 'wid'])
+data = pd.read_csv('data/2022_torn.csv', index_col='om', usecols=['om', 'date', 'time', 'st', 'mag', 'loss', 'slat', 'slon', 'elat', 'elon', 'len', 'wid'])
 
 # Example: Parse and clean
 data['start_coords'] = list(zip(data['slat'], data['slon']))

@@ -185,6 +185,7 @@ def is_image_blank_or_incomplete(image, region, x_dim, y_dim, scale=30):
     try:
         dict_values = [value for value in pixel_count.values()]
         print(dict_values)
+        print("xdim: " + str(x_dim) + ", ydim: " + str(y_dim) + ", 'checkvalue': " + str((x_dim * y_dim) * 0.85))
         for index in range(13): # iterate through indicies 0-12 (non mask values)
             if dict_values[index - 1] < ((x_dim * y_dim) * 0.85):
                 is_incomplete = True
