@@ -175,7 +175,7 @@ def is_image_blank_or_incomplete(image, region, x_dim, y_dim, scale=30):
         # maxPixels=1e9
     ).getInfo()
 
-    x_dim, y_dim = get_image_dimensions(image)
+    # x_dim, y_dim = get_image_dimensions(image)
     
     # Check if all bands have zero or NaN values
     is_blank = all(value == 0 or value is None for value in pixel_sum.values())
@@ -383,17 +383,17 @@ def get_after_image(yr, mo, dy, lat1, lon1, lat2, lon2, max_attempts=10):
 
 #     before_image = before_collection.mosaic()
 
-#     # getThumbURL ?
-#     before_url = before_image.getThumbURL(
-#     {
-#         "format": "png",
-#         "bands": ["B4", "B3", "B2"],
-#         "dimensions": [x_dim, y_dim],
-#         "region": bbox,
-#         "min": 0,
-#         "max": 3000,
-#     }
-#     )   
+    # # getThumbURL ?
+    # before_url = before_image.getThumbURL(
+    # {
+    #     "format": "png",
+    #     "bands": ["B4", "B3", "B2"],
+    #     "dimensions": [x_dim, y_dim],
+    #     "region": bbox,
+    #     "min": 0,
+    #     "max": 3000,
+    # }
+    # )   
 
 #     after_collection = (
 #     ee.ImageCollection("COPERNICUS/S2_HARMONIZED")
