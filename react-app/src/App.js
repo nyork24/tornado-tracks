@@ -6,6 +6,13 @@ import "leaflet/dist/leaflet.css";
 import {ImageOverlay, MapContainer, TileLayer} from "react-leaflet"; 
 import {latLngBounds} from "leaflet";
 const bounds = new latLngBounds([37.6262, -97.1930], [37.7830, -97.0820])
+const tornadoOptions = [
+  { value: 'test', label: 'Test'}
+]
+
+const tornadoSelect = () => (
+  <Select options = {tornadoOptions}/>
+)
 
 export default function App() {
   return (
