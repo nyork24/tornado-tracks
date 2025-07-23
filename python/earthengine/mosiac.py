@@ -336,7 +336,7 @@ def get_after_image(yr, mo, dy, lat1, lon1, lat2, lon2, max_attempts=10, debug=F
     x_dim, y_dim = image_dimensions(ns, ew)
     bbox = bbox_from_point(size, center[0], center[1])
     given_date = np.datetime64(f"{yr:04d}-{mo:02d}-{dy:02d}")
-    threshold = 14
+    threshold = 2
     attempt = 0
     scale = 10
     url = ""

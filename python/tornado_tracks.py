@@ -6,7 +6,7 @@ from earthengine.mosiac import *
 app = Flask(__name__)
 CORS(app)
 
-data = pd.read_csv('python/2022_torn.csv', index_col='om', usecols=['om', 'yr', 'mo', 'dy', 'time', 'st', 'mag', 'loss', 'slat', 'slon', 'elat', 'elon', 'len', 'wid'])
+data = pd.read_csv('2022_torn.csv', index_col='om', usecols=['om', 'yr', 'mo', 'dy', 'time', 'st', 'mag', 'loss', 'slat', 'slon', 'elat', 'elon', 'len', 'wid'])
 data['start_coords'] = list(zip(data['slat'], data['slon']))
 data['end_coords'] = list(zip(data['elat'], data['elon']))
 
